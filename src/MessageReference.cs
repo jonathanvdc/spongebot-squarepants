@@ -47,7 +47,7 @@ namespace Spongebot
             int i = 0;
             await allMessages.ForEachAsync(msg =>
             {
-                if (msg.Author.Username.Equals(Author, StringComparison.InvariantCultureIgnoreCase))
+                if (msg.Author.Username.Equals(Author, StringComparison.OrdinalIgnoreCase))
                 {
                     if (i == MessageIndex)
                     {

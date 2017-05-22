@@ -11,10 +11,17 @@ namespace Spongebot
     /// </summary>
     public struct ParsedArguments
     {
-        private ParsedArguments(string token)
+        private ParsedArguments(string parent, string token)
         {
+            this.Parent = parent;
             this.Token = token;
         }
+
+        /// <summary>
+        /// Gets Spongebot's parent's username.
+        /// </summary>
+        /// <returns>Spongebot's parent's username.</returns>
+        public string Parent { get; private set; }
 
         /// <summary>
         /// Gets the Discord access token.
@@ -30,13 +37,13 @@ namespace Spongebot
         /// <returns><c>true</c> if the given arguments were parsed successfully; otherwise, <c>false</c>.</returns>
         public static bool TryParse(string[] args, out ParsedArguments parsedArgs)
         {
-            if (args.Length != 1)
+            if (args.Length != 2)
             {
                 parsedArgs = default(ParsedArguments);
                 return false;
             }
 
-            parsedArgs = new ParsedArguments(args[0]);
+            parsedArgs = new ParsedArguments(args[0], args[1]);
             return true;
         }
     }
@@ -46,14 +53,15 @@ namespace Spongebot
     /// </summary>
     public sealed class Spongebot
     {
-        private Spongebot(string token)
+        private Spongebot(string owner, string token)
         {
             this.Token = token;
             this.client = new DiscordSocketClient();
             this.commands = new Dictionary<string, Command>()
             {
                 { "mock", new MockCommand() },
-                { "mockify", new MockifyCommand() }
+                { "mockify", new MockifyCommand() },
+                { "may", new SleepCommand(owner) }
             };
             this.commands.Add("help", new HelpCommand(commands));
         }
@@ -78,7 +86,7 @@ namespace Spongebot
                 Command command;
                 if (commands.TryGetValue(commandName, out command))
                 {
-                    command.Run(commandArg, message);
+                    return command.Run(commandArg, message);
                 }
             }
             return Task.CompletedTask;
@@ -100,11 +108,12 @@ namespace Spongebot
         /// <summary>
         /// Creates a new Spongebot from the given access token.
         /// </summary>
+        /// <param name="parent">Spongebot's parent</param>
         /// <param name="token">Spongebot's token.</param>
         /// <returns>A Spongebot instance.</returns>
-        public static Spongebot Create(string token)
+        public static Spongebot Create(string parent, string token)
         {
-            var bot = new Spongebot(token);
+            var bot = new Spongebot(parent, token);
             bot.client.MessageReceived += bot.MessageReceived;
             return bot;
         }
@@ -117,11 +126,11 @@ namespace Spongebot
             ParsedArguments parsedArgs;
             if (!ParsedArguments.TryParse(args, out parsedArgs))
             {
-                Console.Error.WriteLine("usage: spongebot-squarepants token");
+                Console.Error.WriteLine("usage: spongebot-squarepants owner token");
                 return 1;
             }
 
-            Spongebot.Create(parsedArgs.Token).Run();
+            Spongebot.Create(parsedArgs.Parent, parsedArgs.Token).Run();
             return 0;
         }
     }
