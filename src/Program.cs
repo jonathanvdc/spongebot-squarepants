@@ -1,6 +1,7 @@
 using System;
 using System.Threading.Tasks;
 using Discord;
+using Discord.WebSocket;
 
 namespace Spongebot
 {
@@ -46,25 +47,40 @@ namespace Spongebot
     {
         private Spongebot(string token)
         {
-            this.client = new DiscordClient();
+            this.client = new DiscordSocketClient();
             this.Token = token;
         }
 
-        private DiscordClient client;
+        private DiscordSocketClient client;
 
         /// <summary>
         /// Gets Spongebot's token.
         /// </summary>
         public string Token { get; private set; }
 
-        private Task Connect()
+        private Task MessageReceived(SocketMessage message)
         {
-            return client.Connect(Token, TokenType.Bot);
+            if (message.Content == ">mock")
+            {
+                return message.Channel.SendMessageAsync(
+                    "![Mocking Spongebob](http://cdn3-www.craveonline.com/assets/uploads/2017/05/mocking-spongebob.jpeg)");
+            }
+            else
+            {
+                return Task.CompletedTask;
+            }
         }
 
-        private void MessageReceived(object sender, MessageEventArgs e)
+        /// <summary>
+        /// Runs Spongebot forever.
+        /// </summary>
+        public void Run()
         {
-
+            client.LoginAsync(TokenType.Bot, Token).Wait();
+            client.StartAsync().Wait();
+            Console.WriteLine("Spongebot's ready for action!");
+            while (true)
+            { }
         }
 
         /// <summary>
@@ -75,7 +91,6 @@ namespace Spongebot
         public static Spongebot Create(string token)
         {
             var bot = new Spongebot(token);
-            bot.client.ExecuteAndWait(bot.Connect);
             bot.client.MessageReceived += bot.MessageReceived;
             return bot;
         }
@@ -92,11 +107,7 @@ namespace Spongebot
                 return 1;
             }
 
-            var bot = Spongebot.Create(parsedArgs.Token);
-            while (true)
-            {
-                // Run the bot until someone interrupts it.
-            }
+            Spongebot.Create(parsedArgs.Token).Run();
             return 0;
         }
     }
