@@ -1,4 +1,5 @@
 using System;
+using System.Collections.Generic;
 using System.Threading.Tasks;
 using Discord;
 using Discord.WebSocket;
@@ -47,8 +48,14 @@ namespace Spongebot
     {
         private Spongebot(string token)
         {
-            this.client = new DiscordSocketClient();
             this.Token = token;
+            this.client = new DiscordSocketClient();
+            this.commands = new Dictionary<string, Command>()
+            {
+                { "mock", new MockCommand() },
+                { "mockify", new MockifyCommand() }
+            };
+            this.commands.Add("help", new HelpCommand(commands));
         }
 
         private DiscordSocketClient client;
@@ -58,17 +65,23 @@ namespace Spongebot
         /// </summary>
         public string Token { get; private set; }
 
+        private Dictionary<string, Command> commands;
+
         private Task MessageReceived(SocketMessage message)
         {
-            if (message.Content == ">mock")
+            if (message.Content.StartsWith(">"))
             {
-                return message.Channel.SendMessageAsync(
-                    "![Mocking Spongebob](http://cdn3-www.craveonline.com/assets/uploads/2017/05/mocking-spongebob.jpeg)");
+                string[] splitCommand = message.Content.Substring(1).Split(
+                    new char[] { }, 2, StringSplitOptions.RemoveEmptyEntries);
+                string commandName = splitCommand[0];
+                string commandArg = splitCommand.Length > 1 ? splitCommand[1] : "";
+                Command command;
+                if (commands.TryGetValue(commandName, out command))
+                {
+                    command.Run(commandArg, message);
+                }
             }
-            else
-            {
-                return Task.CompletedTask;
-            }
+            return Task.CompletedTask;
         }
 
         /// <summary>
@@ -79,8 +92,9 @@ namespace Spongebot
             client.LoginAsync(TokenType.Bot, Token).Wait();
             client.StartAsync().Wait();
             Console.WriteLine("Spongebot's ready for action!");
-            while (true)
-            { }
+
+            // Wait forever.
+            Task.Delay(-1).Wait();
         }
 
         /// <summary>
