@@ -24,24 +24,48 @@ namespace Spongebot
         public static string Mockify(string text)
         {
             var builder = new StringBuilder(text);
-            bool inEmoticon = false;
+
+            var emoticonChars = new HashSet<int>();
+            int emoticonSpanStart = -1;
             for (int i = 0; i < builder.Length; i++)
             {
                 char c = builder[i];
                 if (c == ':')
                 {
-                    inEmoticon = !inEmoticon;
-                }
-                else if (!inEmoticon)
-                {
-                    if (i % 2 == 0)
+                    if (emoticonSpanStart < 0)
                     {
-                        builder[i] = char.ToLower(c);
+                        emoticonSpanStart = i;
                     }
                     else
                     {
+                        for (int j = emoticonSpanStart; j <= i; j++)
+                        {
+                            emoticonChars.Add(j);
+                        }
+                        emoticonSpanStart = -1;
+                    }
+                }
+                else if (c == '\n')
+                {
+                    emoticonSpanStart = -1;
+                }
+            }
+
+            bool upper = false;
+            for (int i = 0; i < builder.Length; i++)
+            {
+                if (!emoticonChars.Contains(i))
+                {
+                    char c = builder[i];
+                    if (upper)
+                    {
                         builder[i] = char.ToUpper(c);
                     }
+                    else
+                    {
+                        builder[i] = char.ToLower(c);
+                    }
+                    upper = !upper;
                 }
             }
             return builder.ToString();
